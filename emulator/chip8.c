@@ -7,6 +7,7 @@
 #define FIRST_INSTRUCTION_ADDRESS (0x200)
 
 inline static uint16_t Fetch(CH8State *state);
+inline static uint16_t ReadInstruction(CH8State *state);
 static int Execute(CH8State *state, uint16_t curr_inst);
 static void RenderLine(uint8_t *line, size_t line_size);
 static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height);
@@ -75,6 +76,10 @@ inline static uint16_t Fetch(CH8State *state) {
     return instruction;
 }
 
+inline static uint16_t ReadInstruction(CH8State *state) {
+    return ((uint16_t)(state->memory[state->pc]) << CHAR_BIT) | (uint16_t)(state->memory[state->pc + 1]);
+}
+
 static int Execute(CH8State *state, uint16_t curr_inst) {    
     int status = 0;
     printf("Curr inst: %04X\n", curr_inst);
@@ -93,7 +98,12 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         }    
         break;
     case 0x1:
+        /* check for self jump - see docs */
         state->pc = curr_inst & (uint16_t)0x0FFF;
+        if (ReadInstruction(state) == curr_inst) {
+            printf("Self jump detected\n");
+            status = -1;
+        }
         break;
     case 0x6:
         state->v_reg[GetNibble(curr_inst, 1)] = curr_inst & 0x00FF;

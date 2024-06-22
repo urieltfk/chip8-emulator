@@ -8,6 +8,9 @@
 !*.hpp
 !*.cpp
 
+# md files
+!*.md
+
 # Prerequisites
 *.d
 
