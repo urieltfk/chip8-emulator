@@ -32,10 +32,16 @@ void CH8LoadToMemory(CH8State *state, const uint8_t *buff, size_t size) {
 
 int CH8Emulate(CH8State *state) {
     uint16_t curr_inst = 0;
-    curr_inst = Fetch(state);
-
+    
     printf("current instruction: %04X\n", curr_inst);
-    Execute(state, curr_inst);
+    while (1) {
+        curr_inst = Fetch(state);
+        if (Execute(state, curr_inst) != 0) {
+            printf("Stopping execution\n");
+            break;
+        }
+    }
+    
 
     return 0;
 }
@@ -50,6 +56,8 @@ inline static uint16_t Fetch(CH8State *state) {
 }
 
 static int Execute(CH8State *state, uint16_t curr_inst) {    
+    int status = 0;
+
     switch (GetNibble(curr_inst, 0))
     {
     case 0x0:
@@ -63,14 +71,18 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
             printf("Unrecognized instruciton\n");
         }    
         break;
-    
+    case 0xA:
+        printf("%04X => i = %ud\n", curr_inst, curr_inst & 0x0FFF);
+        state->i = curr_inst & 0x0FFF;
+        break;
+
     default:
         printf("Unrecognized or unimplemented instruction: %04X\n", curr_inst);
+        status = -1;
         break;
     }
 
-
-    return 0;
+    return status;
 }
 
 static inline uint16_t GetNibble(uint16_t instruction, int idx) {
