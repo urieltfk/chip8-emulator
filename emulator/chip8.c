@@ -9,6 +9,7 @@
 inline static uint16_t Fetch(CH8State *state);
 static int Execute(CH8State *state, uint16_t curr_inst);
 static void RenderLine(uint8_t *line, size_t line_size);
+static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height);
 
 /* Bitwise utils */
 static inline uint16_t GetNibble(uint16_t instruction, int idx);
@@ -38,7 +39,7 @@ static void RenderLine(uint8_t *line, size_t line_size) {
     for (int i = 0; i < line_size; ++i) {
         uint8_t curr_byte = line[i];
         for (int j = 0; j < CHAR_BIT; j++) {
-            curr_byte & 0x1000 ? printf("X") : printf(".");
+            curr_byte & 0x10 ? printf("X") : printf(".");
             curr_byte <<= 1;
         }
     }
@@ -83,7 +84,6 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
             /* clear screen */
             memset(state->screen, 0, SCREEN_SIZE);
             printf("Were on clear screen\n");
-            CH8Display(state);
         } else if (0x00EE == curr_inst) {
             /* uniplemented */
         } else {
@@ -98,6 +98,11 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         printf("%04X => i = %03X\n", curr_inst, curr_inst & 0x0FFF);
         state->i = curr_inst & 0x0FFF;
         break;
+    case 0xD:
+        printf("DXYN instruction: %04X\n", curr_inst);
+        ExecSprite(state, GetNibble(curr_inst, 1), GetNibble(curr_inst, 2), GetNibble(curr_inst, 3));
+        CH8Display(state);
+        break;
     default:
         printf("Unrecognized or unimplemented instruction: %04X\n", curr_inst);
         status = -1;
@@ -105,6 +110,18 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
     }
 
     return status;
+}
+
+static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height) {
+    printf("Running sprite: x: %d, y: %d, height: %d\n",x, y, height );
+    int has_collision = 0;
+
+    for (int i = 0; i < height; ++i) {
+        has_collision |= !!state->screen[y + i][x];
+        state->screen[y + i][x] ^= 0xFF;
+    }
+
+    state->v_reg[0xF] = !!has_collision;
 }
 
 static inline uint16_t GetNibble(uint16_t instruction, int idx) {
