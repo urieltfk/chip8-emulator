@@ -29,6 +29,7 @@ void CH8Destroy(CH8State *state) {
 }
 
 void CH8Display(CH8State *state) {
+    system("clear");
     for (int i = 0; i < SCREEN_HEIGHT; ++i) {
         RenderLine(state->screen[i], SCREEN_WIDTH / CHAR_BIT);
         printf("\n");
@@ -76,6 +77,7 @@ inline static uint16_t Fetch(CH8State *state) {
 
 static int Execute(CH8State *state, uint16_t curr_inst) {    
     int status = 0;
+    printf("Curr inst: %04X\n", curr_inst);
 
     switch (GetNibble(curr_inst, 0))
     {
@@ -89,6 +91,9 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         } else {
             printf("Unrecognized instruciton\n");
         }    
+        break;
+    case 0x1:
+        state->pc = curr_inst & (uint16_t)0x0FFF;
         break;
     case 0x6:
         state->v_reg[GetNibble(curr_inst, 1)] = curr_inst & 0x00FF;
