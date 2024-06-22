@@ -71,11 +71,14 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
             printf("Unrecognized instruciton\n");
         }    
         break;
+    case 0x6:
+        state->v_reg[ GetNibble(curr_inst, 1)] = curr_inst & 0x00FF;
+        printf("Set reg %01X to %02X\n",  GetNibble(curr_inst, 1), curr_inst & 0x00FF);
+        break;
     case 0xA:
-        printf("%04X => i = %ud\n", curr_inst, curr_inst & 0x0FFF);
+        printf("%04X => i = %03X\n", curr_inst, curr_inst & 0x0FFF);
         state->i = curr_inst & 0x0FFF;
         break;
-
     default:
         printf("Unrecognized or unimplemented instruction: %04X\n", curr_inst);
         status = -1;
