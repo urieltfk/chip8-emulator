@@ -116,7 +116,7 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         printf("%04X => i = %03X\n", curr_inst, curr_inst & 0x0FFF);
         state->i = curr_inst & 0x0FFF;
         break;
-    case 0xD:
+    case 0xD: /* Ive done it wrong - take a look at specification */
         printf("DXYN instruction: %04X\n", curr_inst);
         ExecSprite(state, GetNibble(curr_inst, 1), GetNibble(curr_inst, 2), GetNibble(curr_inst, 3));
         CH8Display(state);
