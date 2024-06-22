@@ -7,12 +7,12 @@
 
 #define SCREEN_HEIGHT (32)
 #define SCREEN_WIDTH (64)
-#define SCREEN_SIZE ((SCREEN_HEIGHT / CHAR_BIT) * (SCREEN_WIDTH / CHAR_BIT))
+#define SCREEN_SIZE ((SCREEN_HEIGHT) * (SCREEN_WIDTH / CHAR_BIT))
 #define CHIP8_RAM_SIZE (4096)
 #define VARIABLE_REGISTERS_COUNT (16)
 
 typedef struct CHIP8State {
-    uint8_t screen[SCREEN_HEIGHT / CHAR_BIT][SCREEN_WIDTH / CHAR_BIT];
+    uint8_t screen[SCREEN_HEIGHT][SCREEN_WIDTH / CHAR_BIT];
     uint8_t memory[CHIP8_RAM_SIZE];
 
     uint16_t pc;

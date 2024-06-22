@@ -8,6 +8,7 @@
 
 inline static uint16_t Fetch(CH8State *state);
 static int Execute(CH8State *state, uint16_t curr_inst);
+static void RenderLine(uint8_t *line, size_t line_size);
 
 /* Bitwise utils */
 static inline uint16_t GetNibble(uint16_t instruction, int idx);
@@ -24,6 +25,23 @@ CH8State *CH8Create() {
 void CH8Destroy(CH8State *state) {
     free(state);
     state = NULL;
+}
+
+void CH8Display(CH8State *state) {
+    for (int i = 0; i < SCREEN_HEIGHT; ++i) {
+        RenderLine(state->screen[i], SCREEN_WIDTH / CHAR_BIT);
+        printf("\n");
+    }
+}
+
+static void RenderLine(uint8_t *line, size_t line_size) {
+    for (int i = 0; i < line_size; ++i) {
+        uint8_t curr_byte = line[i];
+        for (int j = 0; j < CHAR_BIT; j++) {
+            curr_byte & 0x1000 ? printf("X") : printf(".");
+            curr_byte <<= 1;
+        }
+    }
 }
 
 void CH8LoadToMemory(CH8State *state, const uint8_t *buff, size_t size) {
@@ -65,6 +83,7 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
             /* clear screen */
             memset(state->screen, 0, SCREEN_SIZE);
             printf("Were on clear screen\n");
+            CH8Display(state);
         } else if (0x00EE == curr_inst) {
             /* uniplemented */
         } else {
