@@ -1,5 +1,6 @@
+# ignore all files but allow directories
 *
-**/*
+!*/
 
 # C/Cpp files
 !**/*.c
