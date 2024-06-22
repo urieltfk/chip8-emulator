@@ -4,7 +4,7 @@
 
 #include "dissasembler.h"
 
-const char *TARGET = "/Users/urielHome/Projects/chip8-emulator/rom_images/ibm_logo.ch8";
+const char *TARGET = "../rom_images/ibm_logo.ch8";
 
 uint8_t *readFile(const char *filename, size_t *ret_size) {
     FILE *file = fopen(filename, "r");
