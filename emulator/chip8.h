@@ -7,6 +7,7 @@
 
 #define SCREEN_HEIGHT (32)
 #define SCREEN_WIDTH (64)
+#define SCREEN_SIZE ((SCREEN_HEIGHT / CHAR_BIT) * (SCREEN_WIDTH / CHAR_BIT))
 #define CHIP8_RAM_SIZE (4096)
 
 typedef struct CHIP8State {

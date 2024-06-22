@@ -7,8 +7,10 @@
 #define FIRST_INSTRUCTION_ADDRESS (0x200)
 
 inline static uint16_t Fetch(CH8State *state);
+static int Execute(CH8State *state, uint16_t curr_inst);
 
 /* Bitwise utils */
+static inline uint16_t GetNibble(uint16_t instruction, int idx);
 
 
 CH8State *CH8Create() {
@@ -33,6 +35,7 @@ int CH8Emulate(CH8State *state) {
     curr_inst = Fetch(state);
 
     printf("current instruction: %04X\n", curr_inst);
+    Execute(state, curr_inst);
 
     return 0;
 }
@@ -46,4 +49,30 @@ inline static uint16_t Fetch(CH8State *state) {
     return instruction;
 }
 
+static int Execute(CH8State *state, uint16_t curr_inst) {    
+    switch (GetNibble(curr_inst, 0))
+    {
+    case 0x0:
+        if (curr_inst == 0x00E0) {
+            /* clear screen */
+            memset(state->screen, 0, SCREEN_SIZE);
+            printf("Were on clear screen\n");
+        } else if (0x00EE == curr_inst) {
+            /* uniplemented */
+        } else {
+            printf("Unrecognized instruciton\n");
+        }    
+        break;
+    
+    default:
+        printf("Unrecognized or unimplemented instruction: %04X\n", curr_inst);
+        break;
+    }
 
+
+    return 0;
+}
+
+static inline uint16_t GetNibble(uint16_t instruction, int idx) {
+    return ((instruction >> (3 - idx) * 4) & 0x000F);
+}
