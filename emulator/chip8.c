@@ -141,7 +141,7 @@ static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height) {
     /* implement collision */
 
     for (int i = 0; i < height; ++i) {
-        state->screen[y + i] ^= ((uint64_t)state->memory[state->i + i]) << x;
+        state->screen[y + i] ^= ((uint64_t)state->memory[state->i + i]) << (63 - x);
     }
 }
 
