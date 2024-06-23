@@ -5,6 +5,7 @@
 #include "chip8.h"
 
 #define FIRST_INSTRUCTION_ADDRESS (0x200)
+#define INST_NIBBLES (4)
 
 const char *SOLID_BLOCK = "\u25A0"; 
 const char *BLANK_SPACE = "\u2800";
@@ -84,12 +85,14 @@ inline static uint16_t ReadInstruction(CH8State *state) {
 static int Execute(CH8State *state, uint16_t curr_inst) {    
     int status = 0;
     printf("Curr inst: %04X\n", curr_inst);
-    uint8_t nib0 = GetNibble(curr_inst, 0);
-    uint8_t nib1 = GetNibble(curr_inst, 1);
-    uint8_t nib2 = GetNibble(curr_inst, 2);
-    uint8_t nib3 = GetNibble(curr_inst, 3);
+    uint8_t nib[INST_NIBBLES] = {
+        GetNibble(curr_inst, 0),
+        GetNibble(curr_inst, 1),
+        GetNibble(curr_inst, 2),
+        GetNibble(curr_inst, 3),
+    }; 
 
-    switch (GetNibble(curr_inst, 0))
+    switch (nib[0])
     {
     case 0x0:
         if (curr_inst == 0x00E0) {
@@ -111,11 +114,11 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         }
         break;
     case 0x6:
-        state->v_reg[nib1] = curr_inst & 0x00FF;
-        printf("Set reg %01X to %02X\n",  nib1, curr_inst & 0x00FF);
+        state->v_reg[nib[1]] = curr_inst & 0x00FF;
+        printf("Set reg %01X to %02X\n",  nib[1], curr_inst & 0x00FF);
         break;
     case 0x7: 
-        state->v_reg[GetNibble(curr_inst, 1)] = curr_inst & 0x00FF;
+        state->v_reg[nib[1]] = curr_inst & 0x00FF;
         break;
     case 0xA:
         printf("%04X => i = %03X\n", curr_inst, curr_inst & 0x0FFF);
@@ -123,7 +126,7 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         break;
     case 0xD: /* Ive done it wrong - take a look at specification */
         printf("DXYN instruction: %04X\n", curr_inst);
-        ExecSprite(state, state->v_reg[nib1], state->v_reg[nib2], nib3);
+        ExecSprite(state, state->v_reg[nib[1]], state->v_reg[nib[2]], nib[3]);
         CH8Display(state);
         break;
     default:

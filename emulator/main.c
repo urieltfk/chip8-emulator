@@ -25,9 +25,9 @@ int main(void) {
         return -1;
     }
 
-    /* CH8LoadToMemory(system, img_buff, read_size); */
+    CH8LoadToMemory(system, img_buff, read_size);
 
-    CH8LoadToMemory(system, print_E_to_screen, sizeof(print_E_to_screen));
+    /* CH8LoadToMemory(system, print_E_to_screen, sizeof(print_E_to_screen)); */
     free(img_buff);
     img_buff = NULL;
 
