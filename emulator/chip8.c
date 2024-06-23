@@ -6,10 +6,13 @@
 
 #define FIRST_INSTRUCTION_ADDRESS (0x200)
 
+const char *SOLID_BLOCK = "\u25A0"; 
+const char *BLANK_SPACE = "\u2800";
+
 inline static uint16_t Fetch(CH8State *state);
 inline static uint16_t ReadInstruction(CH8State *state);
 static int Execute(CH8State *state, uint16_t curr_inst);
-static void RenderLine(uint8_t *line, size_t line_size);
+static void RenderLine(uint64_t line);
 static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height);
 
 /* Bitwise utils */
@@ -30,20 +33,18 @@ void CH8Destroy(CH8State *state) {
 }
 
 void CH8Display(CH8State *state) {
-    system("clear");
     for (int i = 0; i < SCREEN_HEIGHT; ++i) {
-        RenderLine(state->screen[i], SCREEN_WIDTH / CHAR_BIT);
+        RenderLine(state->screen[i]);
         printf("\n");
     }
 }
 
-static void RenderLine(uint8_t *line, size_t line_size) {
-    for (int i = 0; i < line_size; ++i) {
-        uint8_t curr_byte = line[i];
-        for (int j = 0; j < CHAR_BIT; j++) {
-            curr_byte & 0x10 ? printf("X") : printf(".");
-            curr_byte <<= 1;
-        }
+static void RenderLine(uint64_t line) {
+    uint64_t bit_runner = 0x1UL;
+    
+    for (int i = 0; i < 64; ++i) {
+        bit_runner & line ? printf("X") : printf(".");
+        bit_runner <<= 1;
     }
 }
 
@@ -83,6 +84,10 @@ inline static uint16_t ReadInstruction(CH8State *state) {
 static int Execute(CH8State *state, uint16_t curr_inst) {    
     int status = 0;
     printf("Curr inst: %04X\n", curr_inst);
+    uint8_t nib0 = GetNibble(curr_inst, 0);
+    uint8_t nib1 = GetNibble(curr_inst, 1);
+    uint8_t nib2 = GetNibble(curr_inst, 2);
+    uint8_t nib3 = GetNibble(curr_inst, 3);
 
     switch (GetNibble(curr_inst, 0))
     {
@@ -106,8 +111,8 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         }
         break;
     case 0x6:
-        state->v_reg[GetNibble(curr_inst, 1)] = curr_inst & 0x00FF;
-        printf("Set reg %01X to %02X\n",  GetNibble(curr_inst, 1), curr_inst & 0x00FF);
+        state->v_reg[nib1] = curr_inst & 0x00FF;
+        printf("Set reg %01X to %02X\n",  nib1, curr_inst & 0x00FF);
         break;
     case 0x7: 
         state->v_reg[GetNibble(curr_inst, 1)] = curr_inst & 0x00FF;
@@ -118,7 +123,7 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         break;
     case 0xD: /* Ive done it wrong - take a look at specification */
         printf("DXYN instruction: %04X\n", curr_inst);
-        ExecSprite(state, GetNibble(curr_inst, 1), GetNibble(curr_inst, 2), GetNibble(curr_inst, 3));
+        ExecSprite(state, state->v_reg[nib1], state->v_reg[nib2], nib3);
         CH8Display(state);
         break;
     default:
@@ -132,14 +137,12 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
 
 static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height) {
     printf("Running sprite: x: %d, y: %d, height: %d\n",x, y, height );
-    int has_collision = 0;
+
+    /* implement collision */
 
     for (int i = 0; i < height; ++i) {
-        has_collision |= !!state->screen[y + i][x];
-        state->screen[y + i][x] ^= 0xFF;
+        state->screen[y + i] ^= ((uint64_t)state->memory[state->i + i]) << x;
     }
-
-    state->v_reg[0xF] = !!has_collision;
 }
 
 static inline uint16_t GetNibble(uint16_t instruction, int idx) {

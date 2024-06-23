@@ -12,7 +12,7 @@
 #define VARIABLE_REGISTERS_COUNT (16)
 
 typedef struct CHIP8State {
-    uint8_t screen[SCREEN_HEIGHT][SCREEN_WIDTH / CHAR_BIT];
+    uint64_t screen[SCREEN_HEIGHT];
     uint8_t memory[CHIP8_RAM_SIZE];
 
     uint16_t pc;
