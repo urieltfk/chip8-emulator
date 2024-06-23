@@ -40,11 +40,11 @@ void CH8Display(CH8State *state) {
 }
 
 static void RenderLine(uint64_t line) {
-    uint64_t bit_runner = 0x1UL;
+    uint64_t bit_runner = 0x1UL << 63;
     
     for (int i = 0; i < 64; ++i) {
         bit_runner & line ? printf("X") : printf(".");
-        bit_runner <<= 1;
+        bit_runner >>= 1;
     }
 }
 
