@@ -3,6 +3,11 @@
 #include "chip8.h"
 
 uint8_t *readFile(const char *filename, size_t *ret_size);
+const uint8_t print_E_to_screen[] = {
+    0xA2, 0x0A, 0x60, 0x0A, 0x61, 0x05,
+    0xD0, 0x17, 0x12, 0x08, 0x7C, 0x40,
+    0x40, 0x7C, 0x40, 0x40, 0x7C
+};
 
 int main(void) {
     printf("Welcome to chip8 emulator\n");
@@ -20,7 +25,9 @@ int main(void) {
         return -1;
     }
 
-    CH8LoadToMemory(system, img_buff, read_size);
+    /* CH8LoadToMemory(system, img_buff, read_size); */
+
+    CH8LoadToMemory(system, print_E_to_screen, sizeof(print_E_to_screen));
     free(img_buff);
     img_buff = NULL;
 
