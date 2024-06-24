@@ -13,6 +13,12 @@
 #define FIRST_INSTRUCTION_ADDRESS (0x200)
 #define INST_NIBBLES (4)
 
+#define FALSE (0)
+#define TRUE (!FALSE)
+
+#define SOLID_BLOCK ("\u25A0")
+#define BLANK_SPACE ("\u2800")
+
 typedef struct CHIP8State {
     uint64_t screen[SCREEN_HEIGHT];
     uint8_t memory[CHIP8_RAM_SIZE];
@@ -21,17 +27,16 @@ typedef struct CHIP8State {
     uint16_t i;
     
     uint8_t v_reg[VARIABLE_REGISTERS_COUNT];
-    
-} CH8State;
 
-const char *SOLID_BLOCK = "\u25A0"; 
-const char *BLANK_SPACE = "\u2800";
+    int is_screen_updated;
+} CH8State;
 
 inline static uint16_t Fetch(CH8State *state);
 inline static uint16_t ReadInstruction(CH8State *state);
 static int Execute(CH8State *state, uint16_t curr_inst);
 static void RenderLine(uint64_t line);
 static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height);
+static void PrintFrameHorLine(void);
 
 /* Bitwise utils */
 static inline uint16_t GetNibble(uint16_t instruction, int idx);
@@ -51,19 +56,30 @@ void CH8Destroy(CH8State *state) {
 }
 
 void CH8Display(CH8State *state) {
+    PrintFrameHorLine();
     for (int i = 0; i < SCREEN_HEIGHT; ++i) {
         RenderLine(state->screen[i]);
         printf("\n");
     }
+    PrintFrameHorLine();
+}
+
+static void PrintFrameHorLine(void) {
+    printf(BLANK_SPACE);
+    for (int i = 0; i < SCREEN_WIDTH; ++i) {
+        printf("_");
+    }
+    printf("\n");
 }
 
 static void RenderLine(uint64_t line) {
     uint64_t bit_runner = 0x1UL << 63;
-    
+    printf("|");
     for (int i = 0; i < 64; ++i) {
-        bit_runner & line ? printf("X") : printf(".");
+        bit_runner & line ? printf(SOLID_BLOCK) : printf(BLANK_SPACE);
         bit_runner >>= 1;
     }
+    printf("|");
 }
 
 void CH8LoadToMemory(CH8State *state, const uint8_t *buff, size_t size) {
@@ -79,6 +95,10 @@ int CH8Emulate(CH8State *state) {
         if (Execute(state, curr_inst) != 0) {
             printf("Stopping execution\n");
             break;
+        }
+        if (state->is_screen_updated) {
+            CH8Display(state);
+            state->is_screen_updated = FALSE;
         }
     }
     
@@ -144,7 +164,6 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
     case 0xD: /* Ive done it wrong - take a look at specification */
         printf("DXYN instruction: %04X\n", curr_inst);
         ExecSprite(state, state->v_reg[nib[1]], state->v_reg[nib[2]], nib[3]);
-        CH8Display(state);
         break;
     default:
         printf("Unrecognized or unimplemented instruction: %04X\n", curr_inst);
@@ -163,6 +182,8 @@ static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height) {
     for (int i = 0; i < height; ++i) {
         state->screen[y + i] ^= ((uint64_t)state->memory[state->i + i]) << (63 - x);
     }
+
+    state->is_screen_updated = TRUE;
 }
 
 static inline uint16_t GetNibble(uint16_t instruction, int idx) {
