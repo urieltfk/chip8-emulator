@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h> /* printf */
 #include <string.h> /* memcpy */
+#include <stdarg.h> /* va_list, va_start, va_end */
 
 #include "chip8.h"
 
@@ -37,6 +38,7 @@ static int Execute(CH8State *state, uint16_t curr_inst);
 static void RenderLine(uint64_t line);
 static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height);
 static void PrintFrameHorLine(void);
+static void DebugPrintf(const char *format, ...);
 
 /* Bitwise utils */
 static inline uint16_t GetNibble(uint16_t instruction, int idx);
@@ -56,6 +58,7 @@ void CH8Destroy(CH8State *state) {
 }
 
 void CH8Display(CH8State *state) {
+    system("clear");
     PrintFrameHorLine();
     for (int i = 0; i < SCREEN_HEIGHT; ++i) {
         RenderLine(state->screen[i]);
@@ -89,11 +92,11 @@ void CH8LoadToMemory(CH8State *state, const uint8_t *buff, size_t size) {
 int CH8Emulate(CH8State *state) {
     uint16_t curr_inst = 0;
     
-    printf("current instruction: %04X\n", curr_inst);
+    DebugPrintf("current instruction: %04X\n", curr_inst);
     while (1) {
         curr_inst = Fetch(state);
         if (Execute(state, curr_inst) != 0) {
-            printf("Stopping execution\n");
+            DebugPrintf("Stopping execution\n");
             break;
         }
         if (state->is_screen_updated) {
@@ -121,7 +124,7 @@ inline static uint16_t ReadInstruction(CH8State *state) {
 
 static int Execute(CH8State *state, uint16_t curr_inst) {    
     int status = 0;
-    printf("Curr inst: %04X\n", curr_inst);
+    DebugPrintf("Curr inst: %04X\n", curr_inst);
     uint8_t nib[INST_NIBBLES] = {
         GetNibble(curr_inst, 0),
         GetNibble(curr_inst, 1),
@@ -135,38 +138,38 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         if (curr_inst == 0x00E0) {
             /* clear screen */
             memset(state->screen, 0, SCREEN_SIZE);
-            printf("Were on clear screen\n");
+            DebugPrintf("Were on clear screen\n");
         } else if (0x00EE == curr_inst) {
             /* uniplemented */
         } else {
-            printf("Unrecognized instruciton\n");
+            DebugPrintf("Unrecognized instruciton\n");
         }    
         break;
     case 0x1:
         /* check for self jump - see docs */
         state->pc = curr_inst & (uint16_t)0x0FFF;
         if (ReadInstruction(state) == curr_inst) {
-            printf("Self jump detected\n");
+            DebugPrintf("Self jump detected\n");
             status = -1;
         }
         break;
     case 0x6:
         state->v_reg[nib[1]] = curr_inst & 0x00FF;
-        printf("Set reg %01X to %02X\n",  nib[1], curr_inst & 0x00FF);
+        DebugPrintf("Set reg %01X to %02X\n",  nib[1], curr_inst & 0x00FF);
         break;
     case 0x7: 
         state->v_reg[nib[1]] += curr_inst & 0x00FF;
         break;
     case 0xA:
-        printf("%04X => i = %03X\n", curr_inst, curr_inst & 0x0FFF);
+        DebugPrintf("%04X => i = %03X\n", curr_inst, curr_inst & 0x0FFF);
         state->i = curr_inst & 0x0FFF;
         break;
     case 0xD: /* Ive done it wrong - take a look at specification */
-        printf("DXYN instruction: %04X\n", curr_inst);
+        DebugPrintf("DXYN instruction: %04X\n", curr_inst);
         ExecSprite(state, state->v_reg[nib[1]], state->v_reg[nib[2]], nib[3]);
         break;
     default:
-        printf("Unrecognized or unimplemented instruction: %04X\n", curr_inst);
+        DebugPrintf("Unrecognized or unimplemented instruction: %04X\n", curr_inst);
         status = -1;
         break;
     }
@@ -175,7 +178,7 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
 }
 
 static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height) {
-    printf("Running sprite: x: %d, y: %d, height: %d\n",x, y, height );
+    DebugPrintf("Running sprite: x: %d, y: %d, height: %d\n",x, y, height );
 
     /* implement collision */
 
@@ -188,4 +191,13 @@ static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height) {
 
 static inline uint16_t GetNibble(uint16_t instruction, int idx) {
     return ((instruction >> (3 - idx) * 4) & 0x000F);
+}
+
+static void DebugPrintf(const char *format, ...) {
+#ifdef DEBUG
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+#endif /* DEBUG */
 }
