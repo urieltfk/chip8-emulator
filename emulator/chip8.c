@@ -4,8 +4,25 @@
 
 #include "chip8.h"
 
+#define SCREEN_HEIGHT (32)
+#define SCREEN_WIDTH (64)
+#define SCREEN_SIZE ((SCREEN_HEIGHT) * (SCREEN_WIDTH / CHAR_BIT))
+#define CHIP8_RAM_SIZE (4096)
+#define VARIABLE_REGISTERS_COUNT (16)
+
 #define FIRST_INSTRUCTION_ADDRESS (0x200)
 #define INST_NIBBLES (4)
+
+typedef struct CHIP8State {
+    uint64_t screen[SCREEN_HEIGHT];
+    uint8_t memory[CHIP8_RAM_SIZE];
+
+    uint16_t pc;
+    uint16_t i;
+    
+    uint8_t v_reg[VARIABLE_REGISTERS_COUNT];
+    
+} CH8State;
 
 const char *SOLID_BLOCK = "\u25A0"; 
 const char *BLANK_SPACE = "\u2800";
