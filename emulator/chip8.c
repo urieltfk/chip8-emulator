@@ -118,7 +118,7 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         printf("Set reg %01X to %02X\n",  nib[1], curr_inst & 0x00FF);
         break;
     case 0x7: 
-        state->v_reg[nib[1]] = curr_inst & 0x00FF;
+        state->v_reg[nib[1]] += curr_inst & 0x00FF;
         break;
     case 0xA:
         printf("%04X => i = %03X\n", curr_inst, curr_inst & 0x0FFF);
