@@ -45,7 +45,8 @@ static void DelayByMS(size_t ms);
 
 /* Bitwise utils */
 static inline uint16_t GetNibble(uint16_t instruction, int idx);
-
+int HasCollision(uint64_t curr_line, uint64_t pix_to_xor);
+uint64_t RotateRowLeft(uint64_t row, size_t n_positions);
 
 CH8State *CH8Create() {
     CH8State *new_state = (CH8State *)calloc(1, sizeof(CH8State));
@@ -185,13 +186,24 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
 static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height) {
     DebugPrintf("Running sprite: x: %d, y: %d, height: %d\n",x, y, height );
     int has_collision = 0;
-    /* implement collision */
 
     for (int i = 0; i < height; ++i) {
-        state->screen[y + i] ^= ((uint64_t)state->memory[state->i + i]) << (63 - x);
+        /* add warp around */
+        uint64_t line_to_xor = RotateRowLeft(state->memory[state->i + i] , 63 - x);
+        has_collision = has_collision | HasCollision(state->screen[y + i], line_to_xor);
+        state->screen[y + i] ^= line_to_xor;
     }
 
     state->is_screen_updated = TRUE;
+    state->v_reg[0xF] = !!has_collision;
+}
+
+int HasCollision(uint64_t curr_line, uint64_t pix_to_xor) {
+    return curr_line & pix_to_xor;
+}
+
+uint64_t RotateRowLeft(uint64_t row, size_t n_positions) {
+    return (row << n_positions) | (row >> (63 - n_positions));
 }
 
 static inline uint16_t GetNibble(uint16_t instruction, int idx) {
