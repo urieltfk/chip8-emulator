@@ -22,6 +22,11 @@
 #define SOLID_BLOCK ("\u2588")
 #define BLANK_SPACE ("\u2800")
 
+enum ch8_status_t {
+    SUCCESS = 0,
+    INF_LOOP,
+};
+
 typedef struct CHIP8State {
     uint64_t screen[SCREEN_HEIGHT];
     uint8_t memory[CHIP8_RAM_SIZE];
@@ -97,14 +102,18 @@ void CH8LoadToMemory(CH8State *state, const uint8_t *buff, size_t size) {
 
 int CH8Emulate(CH8State *state) {
     uint16_t curr_inst = 0;
+    int status = 0;
     
     DebugPrintf("current instruction: %04X\n", curr_inst);
     while (1) {
         curr_inst = Fetch(state);
-        if (Execute(state, curr_inst) != 0) {
-            DebugPrintf("Stopping execution\n");
+
+        status = Execute(state, curr_inst);
+        if (status != SUCCESS) {
+            DebugPrintf("Stopping execution, status: %d\n", status);
             break;
         }
+
         DelayByMS(INTRA_CYCLE_DELAY);
         if (state->is_screen_updated) {
             CH8Display(state);
@@ -113,7 +122,7 @@ int CH8Emulate(CH8State *state) {
     }
     
 
-    return 0;
+    return status;
 }
 
 inline static uint16_t Fetch(CH8State *state) {
@@ -155,8 +164,8 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
     case 0x1:
         state->pc = curr_inst & (uint16_t)0x0FFF;
         if (ReadInstruction(state) == curr_inst) {
-            DebugPrintf("Self jump detected\n");
-            status = -1;
+            printf("Self jump detected\n");
+            status = INF_LOOP;
         }
         break;
     case 0x6:
