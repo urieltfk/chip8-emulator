@@ -19,7 +19,7 @@ int main(void) {
     printf("Welcome to chip8 emulator\n");
 
     size_t read_size = 0;
-    uint8_t *img_buff = readFile("../rom_images/ibm_logo.ch8", &read_size);
+    uint8_t *img_buff = readFile("../rom_images/2-ibm-logo.ch8", &read_size);
     if (img_buff == NULL) {
         printf("Failed to read executable\n");
         return -1;
