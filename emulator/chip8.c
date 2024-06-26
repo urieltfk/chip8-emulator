@@ -17,7 +17,7 @@
 #define FALSE (0)
 #define TRUE (!FALSE)
 
-#define SOLID_BLOCK ("\u25A0")
+#define SOLID_BLOCK ("\u2588")
 #define BLANK_SPACE ("\u2800")
 
 typedef struct CHIP8State {
@@ -58,7 +58,6 @@ void CH8Destroy(CH8State *state) {
 }
 
 void CH8Display(CH8State *state) {
-    system("clear");
     PrintFrameHorLine();
     for (int i = 0; i < SCREEN_HEIGHT; ++i) {
         RenderLine(state->screen[i]);
@@ -140,13 +139,12 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
             memset(state->screen, 0, SCREEN_SIZE);
             DebugPrintf("Were on clear screen\n");
         } else if (0x00EE == curr_inst) {
-            /* uniplemented */
+            DebugPrintf("Unimplemented instruciton\n");
         } else {
             DebugPrintf("Unrecognized instruciton\n");
         }    
         break;
     case 0x1:
-        /* check for self jump - see docs */
         state->pc = curr_inst & (uint16_t)0x0FFF;
         if (ReadInstruction(state) == curr_inst) {
             DebugPrintf("Self jump detected\n");
