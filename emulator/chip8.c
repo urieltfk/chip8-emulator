@@ -2,6 +2,7 @@
 #include <stdio.h> /* printf */
 #include <string.h> /* memcpy */
 #include <stdarg.h> /* va_list, va_start, va_end */
+#include <time.h> /* clock_t */
 
 #include "chip8.h"
 
@@ -10,6 +11,7 @@
 #define SCREEN_SIZE ((SCREEN_HEIGHT) * (SCREEN_WIDTH / CHAR_BIT))
 #define CHIP8_RAM_SIZE (4096)
 #define VARIABLE_REGISTERS_COUNT (16)
+#define INTRA_CYCLE_DELAY (100000)
 
 #define FIRST_INSTRUCTION_ADDRESS (0x200)
 #define INST_NIBBLES (4)
@@ -39,6 +41,7 @@ static void RenderLine(uint64_t line);
 static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height);
 static void PrintFrameHorLine(void);
 static void DebugPrintf(const char *format, ...);
+static void DelayByMS(size_t ms);
 
 /* Bitwise utils */
 static inline uint16_t GetNibble(uint16_t instruction, int idx);
@@ -58,6 +61,9 @@ void CH8Destroy(CH8State *state) {
 }
 
 void CH8Display(CH8State *state) {
+#ifndef DEBUG
+    system("clear");
+#endif
     PrintFrameHorLine();
     for (int i = 0; i < SCREEN_HEIGHT; ++i) {
         RenderLine(state->screen[i]);
@@ -98,6 +104,7 @@ int CH8Emulate(CH8State *state) {
             DebugPrintf("Stopping execution\n");
             break;
         }
+        DelayByMS(INTRA_CYCLE_DELAY);
         if (state->is_screen_updated) {
             CH8Display(state);
             state->is_screen_updated = FALSE;
@@ -177,7 +184,7 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
 
 static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height) {
     DebugPrintf("Running sprite: x: %d, y: %d, height: %d\n",x, y, height );
-
+    int has_collision = 0;
     /* implement collision */
 
     for (int i = 0; i < height; ++i) {
@@ -198,4 +205,12 @@ static void DebugPrintf(const char *format, ...) {
     vprintf(format, args);
     va_end(args);
 #endif /* DEBUG */
+}
+
+static void DelayByMS(size_t ms) {
+    clock_t target_time = clock() + ms;
+    
+    while (clock() < target_time)
+    {
+    }
 }
