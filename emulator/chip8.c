@@ -188,7 +188,6 @@ static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height) {
     int has_collision = 0;
 
     for (int i = 0; i < height; ++i) {
-        /* add warp around */
         uint64_t line_to_xor = RotateRowLeft(state->memory[state->i + i] , 63 - x);
         has_collision = has_collision | HasCollision(state->screen[y + i], line_to_xor);
         state->screen[y + i] ^= line_to_xor;
