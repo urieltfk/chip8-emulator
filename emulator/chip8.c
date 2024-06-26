@@ -3,6 +3,7 @@
 #include <string.h> /* memcpy */
 #include <stdarg.h> /* va_list, va_start, va_end */
 #include <time.h> /* clock_t */
+#include <assert.h> /* assert */
 
 #include "chip8.h"
 
@@ -12,9 +13,11 @@
 #define CHIP8_RAM_SIZE (4096)
 #define VARIABLE_REGISTERS_COUNT (16)
 #define INTRA_CYCLE_DELAY (100000)
+#define CALL_STACK_SIZE (16)
 
 #define FIRST_INSTRUCTION_ADDRESS (0x200)
 #define INST_NIBBLES (4)
+#define EMPTY_STACK (-1)
 
 #define FALSE (0)
 #define TRUE (!FALSE)
@@ -35,6 +38,8 @@ typedef struct CHIP8State {
     uint16_t i;
     
     uint8_t v_reg[VARIABLE_REGISTERS_COUNT];
+    uint8_t call_stack[CALL_STACK_SIZE];
+    int stack_top;
 
     int is_screen_updated;
 } CH8State;
@@ -52,11 +57,14 @@ static void DelayByMS(size_t ms);
 static inline uint16_t GetNibble(uint16_t instruction, int idx);
 int HasCollision(uint64_t curr_line, uint64_t pix_to_xor);
 uint64_t RotateRowLeft(uint64_t row, size_t n_positions);
+static inline uint8_t GetLSByte(uint16_t inst);
+static inline uint8_t GetMSByte(uint16_t inst);
 
 CH8State *CH8Create() {
     CH8State *new_state = (CH8State *)calloc(1, sizeof(CH8State));
 
     new_state->pc = FIRST_INSTRUCTION_ADDRESS;
+    new_state->stack_top = EMPTY_STACK;
     
     return new_state;
 }
@@ -168,9 +176,25 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
             status = INF_LOOP;
         }
         break;
+    case 0x2:
+        state->stack_top++;
+        assert(state->stack_top > EMPTY_STACK && state->stack_top < CALL_STACK_SIZE);
+        state->call_stack[state->stack_top] = state->pc;
+        state->pc = curr_inst & 0x0FFF;
+        break;
+    case 0x3:
+        if (state->v_reg[nib[1]] == GetLSByte(curr_inst)) {
+            state->pc += 2;
+        }
+        break;
+    case 0x4: 
+        if (state->v_reg[nib[1]] != GetLSByte(curr_inst)) {
+            state->pc += 2;
+        }
+        break;
     case 0x6:
         state->v_reg[nib[1]] = curr_inst & 0x00FF;
-        DebugPrintf("Set reg %01X to %02X\n",  nib[1], curr_inst & 0x00FF);
+        DebugPrintf("Set reg %01X to %02X\n",  nib[1], GetLSByte(curr_inst));
         break;
     case 0x7: 
         state->v_reg[nib[1]] += curr_inst & 0x00FF;
@@ -197,7 +221,7 @@ static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height) {
     int has_collision = 0;
 
     for (int i = 0; i < height; ++i) {
-        uint64_t line_to_xor = RotateRowLeft(state->memory[state->i + i] , 63 - x);
+        uint64_t line_to_xor = RotateRowLeft(state->memory[state->i + i] , 63 - x - 8); /* Theres a bug here, this -8 shouldnt be there..., find why it works correctly with it and fix. */
         has_collision = has_collision | HasCollision(state->screen[y + i], line_to_xor);
         state->screen[y + i] ^= line_to_xor;
     }
@@ -225,6 +249,14 @@ static void DebugPrintf(const char *format, ...) {
     vprintf(format, args);
     va_end(args);
 #endif /* DEBUG */
+}
+
+static inline uint8_t GetLSByte(uint16_t inst) {
+    return inst & 0x00FF;
+}
+
+static inline uint8_t GetMSByte(uint16_t inst) {
+    return (inst & 0xFF00) >> CHAR_BIT;
 }
 
 static void DelayByMS(size_t ms) {
