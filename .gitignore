@@ -11,6 +11,9 @@
 # md files
 !*.md
 
+# makefile & build tools
+!makefile
+
 # Prerequisites
 *.d
 
