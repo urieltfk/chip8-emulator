@@ -164,8 +164,11 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
             memset(state->screen, 0, SCREEN_SIZE);
             DebugPrintf("Were on clear screen\n");
         } else if (0x00EE == curr_inst) {
-            DebugPrintf("Unimplemented instruciton\n");
+            assert(state->stack_top > EMPTY_STACK);
+            state->pc = state->call_stack[state->stack_top];
+            state->stack_top--;
         } else {
+            status = -1;
             DebugPrintf("Unrecognized instruciton\n");
         }    
         break;
@@ -192,12 +195,22 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
             state->pc += 2;
         }
         break;
+    case 0x5:
+        if (state->v_reg[nib[1]] == state->v_reg[nib[2]]) {
+            state->pc += 2;
+        }
+        break;
     case 0x6:
         state->v_reg[nib[1]] = curr_inst & 0x00FF;
         DebugPrintf("Set reg %01X to %02X\n",  nib[1], GetLSByte(curr_inst));
         break;
     case 0x7: 
         state->v_reg[nib[1]] += curr_inst & 0x00FF;
+        break;
+    case 0x9: 
+        if (state->v_reg[nib[1]] != state->v_reg[nib[2]]) {
+            state->pc += 2;
+        }
         break;
     case 0xA:
         DebugPrintf("%04X => i = %03X\n", curr_inst, curr_inst & 0x0FFF);
