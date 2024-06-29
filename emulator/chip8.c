@@ -59,6 +59,7 @@ int HasCollision(uint64_t curr_line, uint64_t pix_to_xor);
 uint64_t RotateRowLeft(uint64_t row, size_t n_positions);
 static inline uint8_t GetLSByte(uint16_t inst);
 static inline uint8_t GetMSByte(uint16_t inst);
+static inline uint8_t ReverseByte(uint8_t b);
 
 CH8State *CH8Create() {
     CH8State *new_state = (CH8State *)calloc(1, sizeof(CH8State));
@@ -95,11 +96,11 @@ static void PrintFrameHorLine(void) {
 }
 
 static void RenderLine(uint64_t line) {
-    uint64_t bit_runner = 0x1UL << 63;
+    uint64_t bit_runner = 0x1UL;
     printf("|");
     for (int i = 0; i < 64; ++i) {
         bit_runner & line ? printf(SOLID_BLOCK) : printf(BLANK_SPACE);
-        bit_runner >>= 1;
+        bit_runner <<= 1;
     }
     printf("|");
 }
@@ -216,7 +217,7 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         DebugPrintf("%04X => i = %03X\n", curr_inst, curr_inst & 0x0FFF);
         state->i = curr_inst & 0x0FFF;
         break;
-    case 0xD: /* Ive done it wrong - take a look at specification */
+    case 0xD:
         DebugPrintf("DXYN instruction: %04X\n", curr_inst);
         ExecSprite(state, state->v_reg[nib[1]], state->v_reg[nib[2]], nib[3]);
         break;
@@ -230,11 +231,12 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
 }
 
 static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height) {
-    DebugPrintf("Running sprite: x: %d, y: %d, height: %d\n",x, y, height );
+    DebugPrintf("Running sprite: x: %d, y: %d, height: %d\n", x, y, height );
     int has_collision = 0;
 
     for (int i = 0; i < height; ++i) {
-        uint64_t line_to_xor = RotateRowLeft(state->memory[state->i + i] , 63 - x - 8); /* Theres a bug here, this -8 shouldnt be there..., find why it works correctly with it and fix. */
+        uint8_t byte_to_draws = ReverseByte(state->memory[state->i + i]);
+        uint64_t line_to_xor = RotateRowLeft(byte_to_draws ,x);
         has_collision = has_collision | HasCollision(state->screen[y + i], line_to_xor);
         state->screen[y + i] ^= line_to_xor;
     }
@@ -270,6 +272,13 @@ static inline uint8_t GetLSByte(uint16_t inst) {
 
 static inline uint8_t GetMSByte(uint16_t inst) {
     return (inst & 0xFF00) >> CHAR_BIT;
+}
+
+static inline uint8_t ReverseByte(uint8_t b) {
+    b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
+    b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
+    b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
+    return b;
 }
 
 static void DelayByMS(size_t ms) {
