@@ -57,6 +57,7 @@ static void PrintFrameHorLine(void);
 static void DebugPrintf(const char *format, ...);
 static void DelayByMS(size_t ms);
 static inline int HasOverflow8Add(uint8_t a, uint8_t b);
+static inline int Inst0xFx65(CH8State *state, uint8_t x);
 
 /* Bitwise utils */
 static inline uint16_t GetNibble(uint16_t instruction, int idx);
@@ -160,7 +161,9 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         GetNibble(curr_inst, 1),
         GetNibble(curr_inst, 2),
         GetNibble(curr_inst, 3),
-    }; 
+    };
+    uint8_t MSbyte = (curr_inst & 0xFF00) >> CHAR_BIT;
+    uint8_t LSbyte = (curr_inst & 0x00FF);
     /* Vx Vy pointers? */
 
     switch (nib[0])
@@ -277,6 +280,17 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         DebugPrintf("DXYN instruction: %04X\n", curr_inst);
         ExecSprite(state, state->v_reg[nib[1]], state->v_reg[nib[2]], nib[3]);
         break;
+    case 0xF:
+        switch (LSbyte)
+        {
+        case 0x65:
+            status = Inst0xFx65(state, nib[1]); 
+            break;
+        default:
+            status = OP_CODE_ERR;
+            break;
+        }
+    break;
     default:
         DebugPrintf("Unrecognized or unimplemented instruction: %04X\n", curr_inst);
         status = OP_CODE_ERR;
@@ -347,4 +361,15 @@ static void DelayByMS(size_t ms) {
 
 static inline int HasOverflow8Add(uint8_t a, uint8_t b) {
     return (a > (UCHAR_MAX - b));
+}
+
+static inline int Inst0xFx65(CH8State *state, uint8_t x) {
+    assert(x < (VARIABLE_REGISTERS_COUNT - 1));
+    assert(state);
+    
+    for (int i = 0; i <= x; ++i) {
+        state->v_reg[i] = state->memory[state->i + i];
+    }
+
+    return 0;
 }
