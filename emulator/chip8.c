@@ -25,6 +25,9 @@
 #define SOLID_BLOCK ("\u2588")
 #define BLANK_SPACE ("\u2800")
 
+/* fucntion like */
+#define GET_REG(state, reg) ((state)->v_reg[reg])
+
 enum ch8_status_t {
     SUCCESS = 0,
     INF_LOOP,
@@ -53,6 +56,7 @@ static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height);
 static void PrintFrameHorLine(void);
 static void DebugPrintf(const char *format, ...);
 static void DelayByMS(size_t ms);
+static inline int HasOverflow8Add(uint8_t a, uint8_t b);
 
 /* Bitwise utils */
 static inline uint16_t GetNibble(uint16_t instruction, int idx);
@@ -229,10 +233,16 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
             state->v_reg[nib[1]] ^= state->v_reg[nib[2]];
             break;
         case 0x4:
-            status = OP_CODE_ERR;
+            if (HasOverflow8Add(state->v_reg[nib[1]], state->v_reg[nib[2]])) {
+                state->v_reg[0xF] = TRUE;
+            }
+            state->v_reg[nib[1]] += state->v_reg[nib[2]];
             break;
         case 0x5:
-            status = OP_CODE_ERR;
+            if (state->v_reg[nib[1]] > state->v_reg[nib[2]]) {
+                state->v_reg[0xF] = 1;
+            }
+            state->v_reg[nib[1]] -= state->v_reg[nib[2]];
             break;
         case 0x6:
             status = OP_CODE_ERR;
@@ -327,4 +337,8 @@ static void DelayByMS(size_t ms) {
     while (clock() < target_time)
     {
     }
+}
+
+static inline int HasOverflow8Add(uint8_t a, uint8_t b) {
+    return (a > (UCHAR_MAX - b));
 }
