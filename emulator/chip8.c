@@ -28,6 +28,7 @@
 enum ch8_status_t {
     SUCCESS = 0,
     INF_LOOP,
+    OP_CODE_ERR,
 };
 
 typedef struct CHIP8State {
@@ -38,7 +39,7 @@ typedef struct CHIP8State {
     uint16_t i;
     
     uint8_t v_reg[VARIABLE_REGISTERS_COUNT];
-    uint8_t call_stack[CALL_STACK_SIZE];
+    uint16_t call_stack[CALL_STACK_SIZE];
     int stack_top;
 
     int is_screen_updated;
@@ -208,6 +209,45 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
     case 0x7: 
         state->v_reg[nib[1]] += curr_inst & 0x00FF;
         break;
+    case 0x8: 
+        switch (nib[3])
+        {
+        case 0x0:
+            DebugPrintf("V[%d] = V[%d]", nib[1], nib[2]);
+            state->v_reg[nib[1]] = state->v_reg[nib[2]];
+            break;
+        case 0x1:
+            DebugPrintf("V[%d] |= V[%d]", nib[1], nib[2]); 
+            state->v_reg[nib[1]] |= state->v_reg[nib[2]];
+            break;
+        case 0x2:
+            DebugPrintf("V[%d] &= V[%d]", nib[1], nib[2]); 
+            state->v_reg[nib[1]] &= state->v_reg[nib[2]];
+            break;
+        case 0x3:
+            DebugPrintf("V[%d] ^= V[%d]", nib[1], nib[2]); 
+            state->v_reg[nib[1]] ^= state->v_reg[nib[2]];
+            break;
+        case 0x4:
+            status = OP_CODE_ERR;
+            break;
+        case 0x5:
+            status = OP_CODE_ERR;
+            break;
+        case 0x6:
+            status = OP_CODE_ERR;
+            break;
+        case 0x7:
+            status = OP_CODE_ERR;
+            break;
+        case 0xE:
+            status = OP_CODE_ERR;
+            break;
+        default:
+            status = OP_CODE_ERR;
+            break;
+        }
+        break;
     case 0x9: 
         if (state->v_reg[nib[1]] != state->v_reg[nib[2]]) {
             state->pc += 2;
@@ -223,7 +263,7 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         break;
     default:
         DebugPrintf("Unrecognized or unimplemented instruction: %04X\n", curr_inst);
-        status = -1;
+        status = OP_CODE_ERR;
         break;
     }
 
