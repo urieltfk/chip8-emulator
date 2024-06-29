@@ -161,6 +161,7 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         GetNibble(curr_inst, 2),
         GetNibble(curr_inst, 3),
     }; 
+    /* Vx Vy pointers? */
 
     switch (nib[0])
     {
@@ -245,13 +246,18 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
             state->v_reg[nib[1]] -= state->v_reg[nib[2]];
             break;
         case 0x6:
-            status = OP_CODE_ERR;
+            state->v_reg[0xF] = state->v_reg[nib[1]] & 0x1;
+            state->v_reg[nib[1]] >>= 1;
             break;
         case 0x7:
-            status = OP_CODE_ERR;
+            if (state->v_reg[nib[2]] > state->v_reg[nib[1]]) {
+                state->v_reg[0xF] = 1;
+            }
+            state->v_reg[nib[1]] = state->v_reg[nib[2]] - state->v_reg[nib[1]];
             break;
         case 0xE:
-            status = OP_CODE_ERR;
+            state->v_reg[0xF] = state->v_reg[nib[1]] & ((uint8_t)0x1 << 7);
+            state->v_reg[nib[1]] <<= 1;
             break;
         default:
             status = OP_CODE_ERR;
