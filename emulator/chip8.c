@@ -60,9 +60,10 @@ static void DelayByMS(size_t ms);
 static inline int HasOverflow8Add(uint8_t a, uint8_t b);
 
 /* instructions */
-static inline int Inst0xFx65(CH8State *state, uint8_t x);
-static inline int Inst0xFx55(CH8State *state, uint8_t x);
 static inline int Inst0xFx33(CH8State *state, uint8_t x);
+static inline int Inst0xFx55(CH8State *state, uint8_t x);
+static inline int Inst0xFx65(CH8State *state, uint8_t x);
+static inline int Inst0xFx1E(CH8State *state, uint8_t x);
 
 /* Bitwise utils */
 static inline uint16_t GetNibble(uint16_t instruction, int idx);
@@ -288,14 +289,17 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
     case 0xF:
         switch (LSbyte)
         {
-        case 0x65:
-            status = Inst0xFx65(state, nib[1]); 
+        case 0x33: 
+            status = Inst0xFx33(state, nib[1]);
             break;
         case 0x55:
             status = Inst0xFx55(state, nib[1]);
             break;
-        case 0x33: 
-            status = Inst0xFx33(state, nib[1]);
+        case 0x65:
+            status = Inst0xFx65(state, nib[1]); 
+            break;
+        case 0x1E:
+            status = Inst0xFx1E(state, nib[1]);
             break;
         default:
             status = OP_CODE_ERR;
@@ -406,6 +410,12 @@ static inline int Inst0xFx33(CH8State *state, uint8_t x) {
         x_val /= BASE10;
         state->memory[state->i + i] = curr_digit;
     }
+
+    return 0;
+}
+
+static inline int Inst0xFx1E(CH8State *state, uint8_t x) {
+    state->i += state->v_reg[x];
 
     return 0;
 }
