@@ -12,7 +12,7 @@
 #define SCREEN_SIZE ((SCREEN_HEIGHT) * (SCREEN_WIDTH / CHAR_BIT))
 #define CHIP8_RAM_SIZE (4096)
 #define VARIABLE_REGISTERS_COUNT (16)
-#define INTRA_CYCLE_DELAY (100000)
+#define INTRA_CYCLE_DELAY (10) // 100000
 #define CALL_STACK_SIZE (16)
 
 #define FIRST_INSTRUCTION_ADDRESS (0x200)
@@ -21,6 +21,7 @@
 
 #define FALSE (0)
 #define TRUE (!FALSE)
+#define BASE10 (10)
 
 #define SOLID_BLOCK ("\u2588")
 #define BLANK_SPACE ("\u2800")
@@ -61,6 +62,7 @@ static inline int HasOverflow8Add(uint8_t a, uint8_t b);
 /* instructions */
 static inline int Inst0xFx65(CH8State *state, uint8_t x);
 static inline int Inst0xFx55(CH8State *state, uint8_t x);
+static inline int Inst0xFx33(CH8State *state, uint8_t x);
 
 /* Bitwise utils */
 static inline uint16_t GetNibble(uint16_t instruction, int idx);
@@ -292,6 +294,9 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         case 0x55:
             status = Inst0xFx55(state, nib[1]);
             break;
+        case 0x33: 
+            status = Inst0xFx33(state, nib[1]);
+            break;
         default:
             status = OP_CODE_ERR;
             break;
@@ -386,6 +391,20 @@ static inline int Inst0xFx55(CH8State *state, uint8_t x) {
 
     for (int i = 0; i <= x; ++i) {
         state->memory[state->i + i] = state->v_reg[i];
+    }
+
+    return 0;
+}
+
+static inline int Inst0xFx33(CH8State *state, uint8_t x) {
+    assert(x < (VARIABLE_REGISTERS_COUNT - 1));
+    assert(state);
+    
+    uint8_t x_val = state->v_reg[x];
+    for (int i = 2; i >= 0; --i) {
+        uint8_t curr_digit = x_val % BASE10;
+        x_val /= BASE10;
+        state->memory[state->i + i] = curr_digit;
     }
 
     return 0;
