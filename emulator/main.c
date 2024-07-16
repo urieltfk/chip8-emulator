@@ -3,17 +3,16 @@
 #include "chip8.h"
 
 uint8_t *readFile(const char *filename, size_t *ret_size);
-const uint8_t print_E_to_screen[] = {
-    0xA2, 0x0A, 0x60, 0x0A, 0x61, 0x05,
-    0xD0, 0x17, 0x12, 0x08, 0x7C, 0x40,
-    0x40, 0x7C, 0x40, 0x40, 0x7C
-};
 
-int main(void) {
+int main(int argc, char **argv) {
+    if (argc < 2) {
+        printf("Please supply image file path\naborting...\n");
+        return -1;
+    }
     printf("Welcome to chip8 emulator\n");
 
     size_t read_size = 0;
-    uint8_t *img_buff = readFile("../rom_images/ibm_logo.ch8", &read_size);
+    uint8_t *img_buff = readFile(argv[1], &read_size);
     if (img_buff == NULL) {
         printf("Failed to read executable\n");
         return -1;
@@ -27,7 +26,6 @@ int main(void) {
 
     CH8LoadToMemory(system, img_buff, read_size);
 
-    /* CH8LoadToMemory(system, print_E_to_screen, sizeof(print_E_to_screen)); */
     free(img_buff);
     img_buff = NULL;
 
