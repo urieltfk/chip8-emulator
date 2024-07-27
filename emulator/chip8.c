@@ -243,15 +243,11 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
             state->v_reg[nib[1]] ^= state->v_reg[nib[2]];
             break;
         case 0x4:
-            if (HasOverflow8Add(state->v_reg[nib[1]], state->v_reg[nib[2]])) {
-                state->v_reg[0xF] = TRUE;
-            }
+            state->v_reg[0xF] = !!HasOverflow8Add(state->v_reg[nib[1]], state->v_reg[nib[2]]);
             state->v_reg[nib[1]] += state->v_reg[nib[2]];
             break;
         case 0x5:
-            if (state->v_reg[nib[1]] > state->v_reg[nib[2]]) {
-                state->v_reg[0xF] = 1;
-            }
+            state->v_reg[0xF] = state->v_reg[nib[1]] > state->v_reg[nib[2]];
             state->v_reg[nib[1]] -= state->v_reg[nib[2]];
             break;
         case 0x6:
@@ -259,9 +255,7 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
             state->v_reg[nib[1]] >>= 1;
             break;
         case 0x7:
-            if (state->v_reg[nib[2]] > state->v_reg[nib[1]]) {
-                state->v_reg[0xF] = 1;
-            }
+            state->v_reg[0xF] = state->v_reg[nib[2]] > state->v_reg[nib[1]];
             state->v_reg[nib[1]] = state->v_reg[nib[2]] - state->v_reg[nib[1]];
             break;
         case 0xE:
