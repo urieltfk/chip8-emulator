@@ -4,7 +4,7 @@
 
 #include "dissasembler.h"
 
-const char *TARGET = "../rom_images/ibm_logo.ch8";
+// const char *TARGET = "../rom_images/4-flags.ch8";
 
 uint8_t *readFile(const char *filename, size_t *ret_size) {
     FILE *file = fopen(filename, "r");
@@ -32,12 +32,17 @@ uint8_t *readFile(const char *filename, size_t *ret_size) {
     return buffer;
 }
 
-int main(void) {
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+        return 1;
+    }
+
     size_t buffSize = 0;
-    uint8_t *buffer = readFile(TARGET, &buffSize);
+    uint8_t *buffer = readFile(argv[1], &buffSize);
     if (buffer == NULL) {
         printf("read file failed\n");
-        return 0;
+        return 1;
     }
 
     Dissasemble(buffer, buffSize);
