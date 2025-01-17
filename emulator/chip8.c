@@ -170,6 +170,7 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
     };
     uint8_t MSbyte = (curr_inst & 0xFF00) >> CHAR_BIT;
     uint8_t LSbyte = (curr_inst & 0x00FF);
+    uint8_t flag_reg_value = 0;
     /* Vx Vy pointers? */
 
     switch (nib[0])
@@ -224,6 +225,7 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         state->v_reg[nib[1]] += curr_inst & 0x00FF;
         break;
     case 0x8: 
+        DebugPrintf("Running 8xyN instruction: %04X\n", curr_inst);
         switch (nib[3])
         {
         case 0x0:
@@ -243,26 +245,32 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
             state->v_reg[nib[1]] ^= state->v_reg[nib[2]];
             break;
         case 0x4:
-            state->v_reg[0xF] = !!HasOverflow8Add(state->v_reg[nib[1]], state->v_reg[nib[2]]);
+            flag_reg_value = !!HasOverflow8Add(state->v_reg[nib[1]], state->v_reg[nib[2]]);
             state->v_reg[nib[1]] += state->v_reg[nib[2]];
+            state->v_reg[0xF] = flag_reg_value;
             break;
         case 0x5:
-            state->v_reg[0xF] = state->v_reg[nib[1]] > state->v_reg[nib[2]];
+            flag_reg_value = state->v_reg[nib[1]] >= state->v_reg[nib[2]];
             state->v_reg[nib[1]] -= state->v_reg[nib[2]];
+            state->v_reg[0xF] = flag_reg_value;
             break;
         case 0x6:
-            state->v_reg[0xF] = state->v_reg[nib[1]] & 0x1;
+            flag_reg_value = state->v_reg[nib[1]] & 0x1;
             state->v_reg[nib[1]] >>= 1;
+            state->v_reg[0xF] = flag_reg_value;
             break;
         case 0x7:
-            state->v_reg[0xF] = state->v_reg[nib[2]] > state->v_reg[nib[1]];
+            flag_reg_value = state->v_reg[nib[2]] >= state->v_reg[nib[1]];
             state->v_reg[nib[1]] = state->v_reg[nib[2]] - state->v_reg[nib[1]];
+            state->v_reg[0xF] = flag_reg_value;
             break;
         case 0xE:
-            state->v_reg[0xF] = state->v_reg[nib[1]] & ((uint8_t)0x1 << 7);
+            flag_reg_value = !!(state->v_reg[nib[1]] & ((uint8_t)0x1 << 7));
             state->v_reg[nib[1]] <<= 1;
+            state->v_reg[0xF] = flag_reg_value;
             break;
         default:
+            DebugPrintf("Unrecognized or unimplemented instruction: %04X\n", curr_inst);
             status = OP_CODE_ERR;
             break;
         }
@@ -314,14 +322,14 @@ static void ExecSprite(CH8State *state, uint8_t x, uint8_t y, uint8_t height) {
     int has_collision = 0;
 
     for (int i = 0; i < height; ++i) {
-        uint8_t byte_to_draws = ReverseByte(state->memory[state->i + i]);
-        uint64_t line_to_xor = RotateRowLeft(byte_to_draws ,x);
-        has_collision = has_collision | HasCollision(state->screen[y + i], line_to_xor);
+        uint8_t byte_to_draw = ReverseByte(state->memory[state->i + i]);
+        uint64_t line_to_xor = RotateRowLeft(byte_to_draw, x);
+        has_collision |= !!(state->screen[y + i] & line_to_xor);
         state->screen[y + i] ^= line_to_xor;
     }
 
     state->is_screen_updated = TRUE;
-    state->v_reg[0xF] = !!has_collision;
+    state->v_reg[0xF] = has_collision;
 }
 
 int HasCollision(uint64_t curr_line, uint64_t pix_to_xor) {
