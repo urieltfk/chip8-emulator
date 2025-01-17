@@ -284,6 +284,12 @@ static int Execute(CH8State *state, uint16_t curr_inst) {
         DebugPrintf("%04X => i = %03X\n", curr_inst, curr_inst & 0x0FFF);
         state->i = curr_inst & 0x0FFF;
         break;
+    case 0xB:
+        state->pc = curr_inst & 0x0FFF + state->v_reg[0];
+        break;
+    case 0xC:
+        state->v_reg[nib[1]] = rand() % 0xFF & curr_inst & 0x00FF;
+        break;
     case 0xD:
         DebugPrintf("DXYN instruction: %04X\n", curr_inst);
         ExecSprite(state, state->v_reg[nib[1]], state->v_reg[nib[2]], nib[3]);
